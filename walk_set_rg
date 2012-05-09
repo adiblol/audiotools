@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# Walk directories recursively, setting ReplayGain tags in FLAC files when not yet set.
+
+BASEDIR=.
+
+find "$BASEDIR" -type d | sort | while read dir; do
+	echo -n "$dir ... "
+	flaclist="`find "$dir" -maxdepth 1 -type f -iname '*.flac' | sort`"
+	tempfile="`mktemp`"
+	touch "$tempfile"
+	if [ "x$flaclist" != "x" ]; then
+		echo "$flaclist" | while read flac; do
+			if [ `metaflac --show-tag=REPLAYGAIN_TRACK_PEAK "$flac" | wc -l` -lt 1 ]; then
+				rm "$tempfile"
+				break
+			fi
+		done
+		if [ -e "$tempfile" ]; then
+			echo "Already calculated, skipping."
+		else
+			echo "Calculating (`echo "$flaclist" | wc -l` files)..."
+			echo "$flaclist" | xargs metaflac --add-replay-gain
+		fi
+	else
+		echo "No FLACs, skipping."
+	fi
+done
+
