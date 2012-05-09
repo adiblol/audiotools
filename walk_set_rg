@@ -4,6 +4,14 @@
 
 BASEDIR=.
 
+xxargs() {
+	str=
+	while read line; do
+		str="${str} \"${line}\""
+	done
+	sh -c "$@ ${str}"
+}
+
 find "$BASEDIR" -type d | sort | while read dir; do
 	echo -n "$dir ... "
 	flaclist="`find "$dir" -maxdepth 1 -type f -iname '*.flac' | sort`"
@@ -21,7 +29,7 @@ find "$BASEDIR" -type d | sort | while read dir; do
 			rm -f "$tempfile"
 		else
 			echo "Calculating (`echo "$flaclist" | wc -l` files)..."
-			echo "$flaclist" | xargs metaflac --add-replay-gain
+			echo "$flaclist" | xxargs metaflac --add-replay-gain
 		fi
 	else
 		echo "No FLACs, skipping."
