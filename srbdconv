@@ -27,8 +27,8 @@ for inflac in $*; do
 	sndfile-resample -to $samplerate -c $srcq "$inflac" "$tempwav"
 	sox "$tempwav" -b $bitdepth -e signed-integer -c $channels --endian little -t raw - dither -s | flac --force-raw-format --endian=little --bps=$bitdepth --sample-rate=$samplerate --sign=signed --channels=$channels --no-seektable --padding=7200 -o "$partialflac" -
 	metaflac --import-tags-from="$tagfile" "$partialflac"
-	metaflac --remove-replay-gain "$partialflac"
-	metaflac --add-replay-gain "$partialflac"
+	#metaflac --remove-replay-gain "$partialflac"
+	#metaflac --add-replay-gain "$partialflac"
 	metaflac --add-seekpoint=64x "$partialflac"
 	mv "$partialflac" "$outflac"
 	rm -f "$tempwav" "$tagfile"
