@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# YouTube music upload preparation script
+#
+# Preserves original music format (FLAC?) to prevent YouTube from doing
+# lossy-to-lossy conversion. Lossless-to-lossy gives much better quality.
+# However, uploading might be problematic to people with crappy
+# very-low-upload asymetric DSL connection.
+
+DIMENSIONS=960x720
+
+
+songfile="$1"
+imgfile="$2"
+convsong="$songfile"
+
+if [ "x$3" == "x" ]; then
+	outfile="`basename "$songfile"`.mkv"
+else
+	outfile="$3"
+fi
+
+if [ "$FUCK_COPYRIGHT_HOLDERS" == "1" ]; then
+	tempsong="`mktemp --tmpdir m2f-XXXX.flac`"
+	convsong="$tempsong"
+	echo "Fuck-Copyright-Holders mode enabled, slowing down by 3% ..."
+	sox -S "$songfile" -b 16 "$tempsong" speed 0.97 rate 44100
+fi
+
+
+tempimg="`mktemp --tmpdir m2f-XXXX.png`"
+echo "Rescaling artwork ..."
+convert "$imgfile" -resize $DIMENSIONS -size $DIMENSIONS xc:black +swap -gravity center -composite "$tempimg"
+
+echo "Creating movie ..."
+ffmpeg -loop_input -r 1 -shortest -y -i "$tempimg" -i "$convsong" -acodec copy -vcodec libx264 -vpre ultrafast -vb 30000 -g 20 "$outfile"
+
+rm -f "$tempimg"
+[ -e "$tempsong" ] && rm -f "$tempsong"
+
