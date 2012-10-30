@@ -16,7 +16,9 @@
 [ "x$destdir" == "x" ] && destdir="${samplerate}_${bitdepth}"
 mkdir -p "$destdir"
 
-for inflac in $*; do
+while [ "x$1" != "x" ]; do
+	inflac="$1"
+	shift
 	tempwav="`mktemp --tmpdir conv_XXXXX.wav`"
 	tagfile="`mktemp --tmpdir conv_XXXXX.txt`"
 	partialflac="${destdir}/.`basename "${inflac}"`.tmp"

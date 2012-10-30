@@ -9,7 +9,8 @@ xxargs() {
 	while read line; do
 		str="${str} \"${line}\""
 	done
-	sh -c "$@ ${str}"
+	echo "$@${str}"
+	sh -c "$@${str}"
 }
 
 find "$BASEDIR" -type d | sort | while read dir; do

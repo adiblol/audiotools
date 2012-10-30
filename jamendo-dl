@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# Download Jamendo album (single tracks not supported yet) in FLAC format (YA RLY!)
+
+# TODO: tagging with data from API. Fortunately FLACs from Jamendo have 4KiB padding for metadata.
+
+inurl="$1"
+
+albumid="`echo "$inurl" | sed -e 's/.\+\/list\/a\([0-9]\+\)\/.\+$/\1/'`"
+foldername="`echo "$inurl" | sed -e 's/.\+\/list\/a\([0-9]\+\)\/\(.\+\)$/\1_\2/'`"
+# TODO: fetching album name from API to have correct case
+
+#echo "$albumid $foldername" #debug
+
+targetdir="./$foldername"
+mkdir -p "$targetdir"
+
+trackn=1
+( wget -O - -q "http://api.jamendo.com/get2/stream+name/track/plain/album_track/?n=100&order=numalbum_asc&streamencoding=flac&album_id=$albumid"; echo '' ) | while read track_url track_name; do
+	#sleep 2
+	if [ "x$track_url" == "x" ]; then
+		break
+	fi
+	track_name_safe="`echo "$track_name" | tr -c 'a-zA-Z0-9' '_'`"
+	tracknp=$trackn
+	if [ $trackn -lt 10 ]; then
+		tracknp=0$trackn
+	fi
+	wget -c -O "$targetdir/${tracknp}_${track_name_safe}.flac" "$track_url"
+	trackn=$[$trackn+1]
+done
