@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# Concatenates multiple audio files into one FLAC file
+# Useful for dumping recordings from hard disk or flash memory PCM recorders
+# working with WAV on FAT32 filesystems and, thus, splitting file every 2GiB
+
+
+if [ "x$1" == "x" ]; then
+	echo "Usage:"
+	echo "  multi2flac OUTFILE INFILE1 INFILE2 [ INFILE3 [ INFILE4 ... ] ]"
+	exit 255
+fi
+
+
+#bitdepth=24
+#channels=2
+#samplerate=44100
+
+outflac="$1"
+shift
+
+formatinfo="`mktemp`"
+sox --i "$1" | sed -e 's/^Sample Rate *: \([0-9]\+\)$/samplerate=\1/; t; s/^Channels *: \([0-9]\+\)$/channels=\1/; t; s/^Precision *: \([0-9]\+\)-bit$/bitdepth=\1/; t; d' > $formatinfo
+. "$formatinfo"
+
+echo "$samplerate Hz, $channels channels, $bitdepth bit"
+
+sox -V3 -S $* -b $bitdepth -e signed-integer -c $channels --endian little -t raw - | flac --force-raw-format --endian=little --bps=$bitdepth --sample-rate=$samplerate --sign=signed --channels=$channels --no-seektable --padding=65536 -o "$outflac" -
+
+metaflac --add-seekpoint=512x "$outflac"
+

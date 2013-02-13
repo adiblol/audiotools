@@ -1,0 +1,68 @@
+#!/bin/bash
+
+toc_in="$1"
+audio_in="$2"
+artist="$3"
+
+destdir="./$(basename "$toc_in" .toc).split"
+
+
+list_files="`mktemp`"
+list_times="`mktemp`"
+list_tagged="`mktemp`"
+
+
+normalize_title() {
+	echo -n "$1" | sed -e 'y/ąćęłńóśżźĄĆĘŁŃÓŚŻŹ/acelnoszzACELNOSZZ/' | tr -c 'a-zA-Z0-9' '_'
+}
+
+mkdir -p "$destdir"
+
+cueconvert -o cue "${toc_in}" | while read arg0 arg1 arg2; do
+	case "$arg0" in
+		"TRACK") tracknr=$arg1 ;;
+		"INDEX")
+			if [ "$arg2" != "00:00:00" ]; then
+				echo "$arg2" | sed -e 's/:\([0-9]\{2\}\)$/.\1/' >> "$list_times"
+			fi
+			filename="${destdir}/${tracknr}-${arg1}.flac"
+			echo "$filename" >> "$list_files"
+			if [ "$arg1" -eq 1 ]; then
+				echo "$filename" >> "$list_tagged"
+			fi
+			;;
+		*) ;;
+	esac
+done
+
+shntool split -f "$list_times" -o flac -n '%d' -a "${destdir}/temp" "$audio_in"
+
+tracknr=1
+cat "$list_files" | while read filename; do
+	mv -v "${destdir}/temp${tracknr}.flac" "${filename}"
+	tracknr=$[${tracknr}+1]
+done
+
+
+xargs cuetag "${toc_in}" < "$list_tagged"
+
+albumname="$(metaflac --show-tag=ALBUM "`head -n 1 < "$list_tagged"`" | sed -e 's/.*=//g')"
+
+cat "$list_files" | while read a; do
+	if [ "x`metaflac --show-tag=ARTIST "$a"`" == "x" ]; then
+		metaflac --set-tag="ARTIST=${artist}" "$a"
+	fi
+	if [ "x`metaflac --show-tag=ALBUM "$a"`" == "x" ]; then
+		metaflac --set-tag="ALBUM=${albumname}" "$a"
+	fi
+done
+
+cat "$list_tagged" | while read a; do
+	#tag_artist="`metaflac "$a" --show-tag=ARTIST | sed -e 's/.*=//g'`"
+	tag_title="`metaflac --show-tag=TITLE "$a" | sed -e 's/.*=//g'`"
+	prefix="$(echo "$a" | sed -e 's/\.flac$//')_"
+	mv -v "$a" "${prefix}$(normalize_title "$tag_title").flac"
+done
+
+rm -f "$list_files" "$list_times" "$list_tagged"
+
