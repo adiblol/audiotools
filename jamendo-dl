@@ -32,7 +32,7 @@ trackn=1
     	wget -c -O $trackfile "$track_url"
 
     	# set metadata
-    	id3v2 -a "$artist_name" -A "$album_name" -t "$track_name" "$trackfile"
+    	id3v2 -a "$artist_name" -A "$album_name" -t "$track_name" -T $trackn "$trackfile"
 
 	trackn=$[$trackn+1]
 done
