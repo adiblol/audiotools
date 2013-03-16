@@ -2,13 +2,14 @@
 
 # Download Jamendo album (single tracks not supported yet) in FLAC format (YA RLY!)
 
-# TODO: tagging with data from API. Fortunately FLACs from Jamendo have 4KiB padding for metadata.
-
 inurl="$1"
 
 albumid="`echo "$inurl" | sed -e 's/.\+\/list\/a\([0-9]\+\)\/.\+$/\1/'`"
 foldername="`echo "$inurl" | sed -e 's/.\+\/list\/a\([0-9]\+\)\/\(.\+\)$/\1_\2/'`"
-# TODO: fetching album name from API to have correct case
+
+# get metadata
+artist_name="`wget -O - -q "http://api.jamendo.com/get2/artist_name/album/plain/?album_id=$albumid"`"
+album_name="`wget -O - -q "http://api.jamendo.com/get2/name/album/plain/?album_id=$albumid"`"
 
 #echo "$albumid $foldername" #debug
 
@@ -26,6 +27,13 @@ trackn=1
 	if [ $trackn -lt 10 ]; then
 		tracknp=0$trackn
 	fi
-	wget -c -O "$targetdir/${tracknp}_${track_name_safe}.flac" "$track_url"
+
+    	trackfile="$targetdir/${tracknp}_${track_name_safe}.flac"
+    	wget -c -O $trackfile "$track_url"
+
+    	# set metadata
+    	 metaflac --set-tag="TITLE=$track_name" --set-tag="ARTIST=$artist_name"\
+                  --set-tag="ALBUM=$album_name" --set-tag="TRACKNUMBER=$trackn" $trackfile      
+
 	trackn=$[$trackn+1]
 done
