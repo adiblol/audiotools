@@ -30,7 +30,7 @@ find "$BASEDIR" -type d | sort | while read dir; do
 			rm -f "$tempfile"
 		else
 			echo "Calculating (`echo "$flaclist" | wc -l` files)..."
-			echo "$flaclist" | xxargs metaflac --add-replay-gain
+			echo "$flaclist" | xargs -d '\n' metaflac --add-replay-gain
 		fi
 	else
 		echo "No FLACs, skipping."
