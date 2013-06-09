@@ -1,0 +1,77 @@
+#!/bin/bash
+
+if [ "x$out_dir" == "x" ]; then
+	out_dir="."
+fi
+
+if [ "x$quality" == "x" ]; then
+	quality='9'
+fi
+
+get_flac_tag() {
+	metaflac --show-tag="$1" "$2" | sed -e 's/.*=//g'
+}
+
+normalize_title() {
+	        echo -n "$1" | sed -e 'y/ąćęłńóśżźĄĆĘŁŃÓŚŻŹ/acelnoszzACELNOSZZ/' | tr -c 'a-zA-Z0-9' '_'
+}
+
+
+while [ "x$1" != "x" ]; do
+	in_dir="$1"
+	shift
+
+	find "$in_dir" -iname '*.flac' -type f | sort | while read in_flac; do
+		if [ "$VA" == "1" ]; then
+			album_artist="Various Artists"
+		fi
+		if [ "x$album_artist" == "x" ]; then
+			album_artist="$(get_flac_tag 'ALBUMARTIST' "$in_flac")"
+		fi
+		if [ "x$album_artist" == "x" ]; then
+			album_artist="$(get_flac_tag 'ALBUM_ARTIST' "$in_flac")"
+		fi
+		if [ "x$album_artist" == "x" ]; then
+			album_artist="$(get_flac_tag 'ALBUM ARTIST' "$in_flac")"
+		fi
+		if [ "x$album_artist" == "x" ]; then
+			album_artist="$(get_flac_tag 'album artist' "$in_flac")"
+		fi
+		if [ "x$album_artist" == "x" ]; then
+			album_artist="$(get_flac_tag 'album_artist' "$in_flac")"
+		fi
+		if [ "x$album_artist" == "x" ]; then
+			album_artist="$(get_flac_tag 'albumartist' "$in_flac")"
+		fi
+		if [ "x$album_artist" == "x" ]; then
+			album_artist="$(get_flac_tag 'ARTIST' "$in_flac")"
+		fi
+		if [ "x$album_artist" == "x" ]; then
+			album_artist="$(get_flac_tag 'artist' "$in_flac")"
+		fi
+		if [ "x$album_artist" == "x" ]; then
+			album_artist="_"
+		fi
+
+		album_name="$(get_flac_tag 'ALBUM' "$in_flac")"
+		if [ "x$album_name" == "x" ]; then
+			album_name="$(get_flac_tag 'album' "$in_flac")"
+		fi
+		if [ "x$album_name" == "x" ]; then
+			album_name="$(basename "`dirname "$in_flac"`")"
+		fi
+		
+		album_year="$(get_flac_tag 'DATE' "$in_flac" | sed -e 's/-.*//g')"
+		if [ "x$album_year" == "x" ]; then
+			album_year="$(get_flac_tag 'date' "$in_flac" | sed -e 's/-.*//g')"
+		fi
+		if [ "x$album_year" != "x" ]; then
+			album_year="$(normalize_title "$album_year")_"
+		fi
+
+
+		destdir="${out_dir}/$(normalize_title "$album_artist")/${album_year}$(normalize_title "$album_name")"
+		nice -n 7 oggenc -q "$quality" -o "${destdir}/$(basename "$in_flac" '.flac').ogg" $oggenc_opts "$in_flac"
+	done
+done
+
