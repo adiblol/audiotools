@@ -8,14 +8,24 @@ normalize_title() {
 	echo -n "$1" | sed -e 'y/ąćęłńóśżźĄĆĘŁŃÓŚŻŹ/acelnoszzACELNOSZZ/' | tr -c 'a-zA-Z0-9' '_'
 }
 
-find . -type l -or -type f | while read flac; do
+find . \( -type l -or -type f \) -and -iname '*.flac' | while read flac; do
 	artist="$(normalize_title "$(get_flac_tag ARTIST "$flac")")"
 	title="$(normalize_title "$(get_flac_tag TITLE "$flac")")"
+	tracknum="$(get_flac_tag TRACKNUMBER "$flac")"
+	tracknum=$[${tracknum}+0]
+	if [ $tracknum -lt 10 ]; then
+		tracknum=0$tracknum
+	fi
 	if [ "x$artist" == "x" ]; then
 		continue
 	fi
 	if [ "x$title" == "x" ]; then
 		continue
 	fi
-	mv "$flac" "$(dirname "$flac")/${artist}_-_${title}.flac"
+	if [ "$notracknum" == "1" ]; then
+		mv "$flac" "$(dirname "$flac")/${artist}_-_${title}.flac"
+	else
+		mv "$flac" "$(dirname "$flac")/${tracknum}__${artist}_-_${title}.flac"
+	fi
 done
+
