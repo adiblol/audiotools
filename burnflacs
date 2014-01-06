@@ -23,6 +23,10 @@ while [ "x$1" != "x" ]; do
 	shift
 done
 
+if [ "x$burndev" == "x" ]; then
+	burndev=/dev/sr0
+fi
+
 cd "$tmpdir"
 
 xargs -d '\n' -a "${tmpdir}/flaclist" shntool cue -- > "${tmpdir}/notags.cue"
@@ -116,7 +120,7 @@ if [ "$dowrite" != "y" ]; then
 fi
 
 while [ "$dowrite" == "y" ]; do
-	cdrdao write -v 2 --device /dev/sr0 --driver generic-mmc-raw --eject --speed 40 ${cdrdao_flags} "${tmpdir}/joined.cue"
+	cdrdao write -v 2 --device "$burndev" --driver generic-mmc --eject --speed 40 ${cdrdao_flags} "${tmpdir}/joined.cue"
 	echo -n "Burn another copy? (y/n) :  "
 	read dowrite
 done
