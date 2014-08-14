@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Convert WAV to FLAC, ignoring directory hierarchy, naming files by creation date.
+# Original files are deleted!
+# Useful for importing recordings for portable recorder such as Zoom H* or Olympus LS*
+
+indir="$1"
+outdir="$2"
+
+find "${indir}" -iname '*.wav' | while read wav; do
+	flac --delete-input-file -o "${outdir}/$(ls -la --time-style '+_TSSTART_%Y-%m-%d_%H-%M-%S_TSEND_' "$wav" | sed -e 's/^.*_TSSTART_\(.\+\)_TSEND_.*$/\1/').flac" "$wav"
+done
+
