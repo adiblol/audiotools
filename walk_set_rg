@@ -13,9 +13,9 @@ xxargs() {
 	sh -c "$@${str}"
 }
 
-find "$BASEDIR" -type d | sort | while read dir; do
+find -L "$BASEDIR" -type d | sort | while read dir; do
 	echo -n "$dir ... "
-	flaclist="`find "$dir" -maxdepth 1 -type f -iname '*.flac' | sort`"
+	flaclist="`find -L "$dir" -maxdepth 1 -type f -iname '*.flac' | sort`"
 	if [ "x$flaclist" != "x" ]; then
 		tempfile="`mktemp`"
 		touch "$tempfile"

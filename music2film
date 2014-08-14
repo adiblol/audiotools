@@ -30,12 +30,12 @@ if [ "$FUCK_COPYRIGHT_HOLDERS" == "1" ]; then
 fi
 
 
-tempimg="`mktemp --tmpdir m2f-XXXX.png`"
-echo "Rescaling artwork ..."
+tempimg="`mktemp --tmpdir m2f-XXXX.bmp`"
+echo "Rescaling artwork ... $temping"
 convert "$imgfile" -resize $DIMENSIONS -size $DIMENSIONS xc:black +swap -gravity center -composite "$tempimg"
 
 echo "Creating movie ..."
-ffmpeg -loop 1 -r 6 -i "$tempimg" -i "$convsong" -shortest -acodec copy -vcodec libx264 -preset ultrafast -qmin 18 -qmax 18 -pix_fmt yuv420p -g 72 -y "$outfile"
+ffmpeg -loop 1 -r 4 -i "$tempimg" -i "$convsong" -shortest -acodec copy -vcodec libx264 -preset ultrafast -qmin 18 -qmax 60 -pix_fmt yuv420p -g 240 -y "$outfile"
 
 rm -f "$tempimg"
 [ -e "$tempsong" ] && rm -f "$tempsong"
