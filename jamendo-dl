@@ -1,6 +1,11 @@
 #!/bin/bash
 
-# Download Jamendo album (single tracks not supported yet) in FLAC format (YA RLY!)
+## Download Jamendo album (single tracks not supported yet) in FLAC format (YA RLY!) (fork by BrainFucker)
+## Added album cover downloading and applying license into tags.
+## Also disabled stripping non english letters from filenames.
+## Original script: https://github.com/adiblol/audiotools/blob/master/jamendo-dl
+
+UA="Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:23.0) Gecko/20100101 Firefox/23.0"
 
 inurl="$1"
 
@@ -8,16 +13,24 @@ albumid="`echo "$inurl" | sed -e 's/.\+\/list\/a\([0-9]\+\)\/.\+$/\1/'`"
 foldername="`echo "$inurl" | sed -e 's/.\+\/list\/a\([0-9]\+\)\/\(.\+\)$/\1_\2/'`"
 
 # get metadata
-artist_name="`wget -O - -q "http://api.jamendo.com/get2/artist_name/album/plain/?album_id=$albumid"`"
-album_name="`wget -O - -q "http://api.jamendo.com/get2/name/album/plain/?album_id=$albumid"`"
+artist_name="`wget -U "$UA" -O - -q "http://api.jamendo.com/get2/artist_name/album/plain/?album_id=$albumid"`"
+album_name="`wget -U "$UA" -O - -q "http://api.jamendo.com/get2/name/album/plain/?album_id=$albumid"`"
 
 #echo "$albumid $foldername" #debug
+
+## Get album licenses
+#  doing it in cycle because sometimes wget fails to get full album page
+while [[ ! $License ]]
+  do
+    License="$(wget -U "$UA" -q -O - "$inurl" | grep -m 1 -P -o -e '"http://creativecommons.org/licenses/.+?"' | sed 's/"//g')"
+  done
+
 
 targetdir="./$foldername"
 mkdir -p "$targetdir"
 
 trackn=1
-( wget -O - -q "http://api.jamendo.com/get2/stream+name/track/plain/album_track/?n=100&order=numalbum_asc&streamencoding=flac&album_id=$albumid"; echo '' ) | while read track_url track_name; do
+( wget -U "$UA" -O - -q "http://api.jamendo.com/get2/stream+name/track/plain/album_track/?n=100&order=numalbum_asc&streamencoding=flac&album_id=$albumid"; echo '' ) | while read track_url track_name; do
 	#sleep 2
 	if [ "x$track_url" == "x" ]; then
 		break
@@ -28,12 +41,16 @@ trackn=1
 		tracknp=0$trackn
 	fi
 
-    	trackfile="$targetdir/${tracknp}_${track_name_safe}.flac"
-    	wget -c -O $trackfile "$track_url"
+    	trackfile="$targetdir/${tracknp}_${track_name}.flac"
+    	wget -U "$UA" -c -O "$trackfile" "$track_url"
 
     	# set metadata
     	 metaflac --set-tag="TITLE=$track_name" --set-tag="ARTIST=$artist_name"\
-                  --set-tag="ALBUM=$album_name" --set-tag="TRACKNUMBER=$trackn" $trackfile      
+                  --set-tag="ALBUM=$album_name" --set-tag="TRACKNUMBER=$trackn" --set-tag="WWW=$inurl" --set-tag="LICENSE=$License" --set-tag="COPYRIGHT=$License" --set-tag="COMMENT=$inurl" --set-tag="PUBLISHER=http://www.jamendo.com" "$trackfile"
 
 	trackn=$[$trackn+1]
 done
+
+
+## Downloading album cover
+wget -U "$UA" -q -O "$targetdir/Cover.jpg" "http://api.jamendo.com/get2/image/album/redirect/?id=$albumid&imagesize=0"
